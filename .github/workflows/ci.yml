@@ -53,12 +53,6 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Run Generate For Common
-        run: pnpm nx run sport-reservation-common:generate
-
-      - name: Install Bin For Common
-        run: pnpm install
-
       - name: Run Checks
         run: pnpm nx run-many -t format,lint,typecheck --output-style=stream
 
