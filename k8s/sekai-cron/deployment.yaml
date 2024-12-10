@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sekai-cron
+  labels:
+    app: sekai-cron
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sekai-cron
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: sekai-cron
+    spec:
+      containers:
+        - name: sekai-cron
+          image: <IMAGE>
+          env:
+            - name: PJSEKAI_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: pjsekaiKey
+            - name: PJSEKAI_IV
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: pjsekaiIv
+            - name: PJSEKAI_JWT
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: pjsekaiJwt
+            - name: S3_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: s3Endpoint
+            - name: S3_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: s3Key
+            - name: S3_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: s3Secret
+            - name: S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: s3Bucket
+            - name: S3_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: s3Path

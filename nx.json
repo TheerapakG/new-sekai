@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "targetDefaults": {
+    "tidy": {
+      "cache": false
+    },
+    "format": {
+      "cache": false
+    },
+    "lint": {
+      "cache": false
+    },
+    "typecheck": {
+      "cache": false
+    },
+    "test": {
+      "cache": false
+    },
+    "build": {
+      "dependsOn": ["tidy"],
+      "outputs": ["{projectRoot}/dist"],
+      "cache": true
+    }
+  },
+  "defaultBase": "main",
+  "plugins": ["@nx-go/nx-go"],
+  "namedInputs": {
+    "sharedGlobals": ["{workspaceRoot}/go.work"]
+  }
+}

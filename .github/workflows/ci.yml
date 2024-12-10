@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - ".github/workflows/ci.yml"
+      - "k8s/sekai-cron/deployment.yaml"
+      - "packages/**"
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  cache-dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Setup node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install
+
+  checks:
+    needs: [cache-dependencies]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Setup node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Run Generate For Common
+        run: pnpm nx run sport-reservation-common:generate
+
+      - name: Install Bin For Common
+        run: pnpm install
+
+      - name: Run Checks
+        run: pnpm nx run-many -t format,lint,typecheck --output-style=stream
+
+  build:
+    strategy:
+      matrix:
+        package: [sekai-cron]
+    needs: [cache-dependencies, checks]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./packages/${{ matrix.package }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Setup node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Run Build
+        run: pnpm nx build ${{ matrix.package }} --output-style=stream
+
+      - name: Build container image
+        run: docker build -t registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/${{ matrix.package }}:$(echo $GITHUB_SHA | head -c7) .
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DigitalOcean Container Registry with short-lived credentials
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Push image to DigitalOcean Container Registry
+        run: docker push registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/${{ matrix.package }}:$(echo $GITHUB_SHA | head -c7)
+
+  deploy:
+    strategy:
+      matrix:
+        package: [sekai-cron]
+    needs: [build]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./packages/${{ matrix.package }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DigitalOcean Container Registry with short-lived credentials
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Update deployment file
+        run: TAG=$(echo $GITHUB_SHA | head -c7) && sed -i 's|<IMAGE>|registry.digitalocean.com/${{ secrets.REGISTRY_NAME }}/${{ matrix.package }}:'${TAG}'|' $GITHUB_WORKSPACE/k8s/${{ matrix.package }}/deployment.yaml
+
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ secrets.CLUSTER_NAME }}
+
+      - name: Deploy to DigitalOcean Kubernetes
+        run: kubectl apply -f $GITHUB_WORKSPACE/k8s/${{ matrix.package }}/deployment.yaml
