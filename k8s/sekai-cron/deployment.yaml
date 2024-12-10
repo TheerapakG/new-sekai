@@ -38,6 +38,21 @@ spec:
                 secretKeyRef:
                   name: sekai-cron-secret
                   key: pjsekaiJwt
+            - name: PJSEKAI_ASSET_BUNDLE_HOST_HASH
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: pjsekaiAssetBundleHostHash
+            - name: PJSEKAI_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: pjsekaiDomain
+            - name: PJSEKAI_PROFILE
+              valueFrom:
+                secretKeyRef:
+                  name: sekai-cron-secret
+                  key: pjsekaiProfile
             - name: S3_ENDPOINT
               valueFrom:
                 secretKeyRef:

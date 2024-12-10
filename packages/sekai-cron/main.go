@@ -156,6 +156,17 @@ func (clients *Clients) UploadAssetbundleIfNotExists(ctx context.Context, key st
 	return u, err
 }
 
+func (clients *Clients) GetGameVersion() m {
+	if os.Getenv("PJSEKAI_ASSET_BUNDLE_HOST_HASH") != "" && os.Getenv("PJSEKAI_DOMAIN") != "" && os.Getenv("PJSEKAI_PROFILE") != "" {
+		return m {
+			"assetbundleHostHash": os.Getenv("PJSEKAI_ASSET_BUNDLE_HOST_HASH"),
+			"domain": os.Getenv("PJSEKAI_DOMAIN"),
+			"profile": os.Getenv("PJSEKAI_PROFILE"),
+		}
+	}
+	return clients.SekaiClient.Request("GET", fmt.Sprintf("https://game-version.sekai.colorfulpalette.org/%v/%v", clients.SekaiClient.AppVersion["appVersion"], clients.SekaiClient.AppVersion["appHash"]), nil)
+}
+
 func (clients *Clients) QueryUpdates() {
 	if !clients.updatingMutex.TryLock() {
 		return
@@ -165,7 +176,7 @@ func (clients *Clients) QueryUpdates() {
 	log.Printf("Querying updates")
 	clients.SekaiClient.update()
 
-	versions := clients.SekaiClient.Request("GET", fmt.Sprintf("https://game-version.sekai.colorfulpalette.org/%v/%v", clients.SekaiClient.AppVersion["appVersion"], clients.SekaiClient.AppVersion["appHash"]), nil)
+	versions := clients.GetGameVersion()
 
 	body := clients.SekaiClient.Request("PUT", fmt.Sprintf("https://%v/api/user/%v/auth?refreshUpdatedResources=False", versions["domain"], clients.SekaiClient.UserId), m{
 		"credential": clients.SekaiClient.Credential,
@@ -302,6 +313,8 @@ func main() {
 		"userId":     IdNumber(0),
 		"credential": clients.SekaiClient.Credential,
 	})
+
+	log.Printf("%v", clients.GetGameVersion())
 
 	c := cron.New()
 	c.AddFunc("* * * * *", clients.QueryUpdates)
