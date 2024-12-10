@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -273,6 +274,7 @@ func main() {
 						MaxIdleConns:        64,
 						MaxIdleConnsPerHost: 64,
 						IdleConnTimeout:     60 * time.Second,
+						TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 					},
 				},
 			},
