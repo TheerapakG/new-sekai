@@ -224,6 +224,10 @@ func (clients *Clients) QueryUpdates() {
 	log.Printf("Found updates")
 }
 
+func (clients *Clients) GetSignature() {
+	clients.SekaiClient.Request("POST", "https://issue.sekai.colorfulpalette.org/api/signature", nil)
+}
+
 func StartKafkaProducer() (*sarama.Client, *sarama.SyncProducer, error) {
 	kafkaBroker := os.Getenv("KAFKA_BROKER")
 	if kafkaBroker == "" {
@@ -298,7 +302,7 @@ func main() {
 			BaseEndpoint: aws.String(os.Getenv("S3_ENDPOINT")),
 		}), KafkaProducer: kafkaProducer, updatingMutex: &sync.Mutex{}}
 
-	clients.SekaiClient.Request("POST", "https://issue.sekai.colorfulpalette.org/api/signature", nil)
+	clients.GetSignature()
 	clients.SekaiClient.update()
 
 	body := clients.SekaiClient.Request("POST", "https://production-game-api.sekai.colorfulpalette.org/api/user", m{
@@ -314,10 +318,9 @@ func main() {
 		"credential": clients.SekaiClient.Credential,
 	})
 
-	log.Printf("%v", clients.GetGameVersion())
-
 	c := cron.New()
 	c.AddFunc("* * * * *", clients.QueryUpdates)
+	c.AddFunc("0 0,12 * * *", clients.GetSignature)
 	c.Start()
 
 	select {}
