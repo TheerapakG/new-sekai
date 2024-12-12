@@ -158,10 +158,10 @@ func (clients *Clients) UploadAssetbundleIfNotExists(ctx context.Context, key st
 
 func (clients *Clients) GetGameVersion() m {
 	if os.Getenv("PJSEKAI_ASSET_BUNDLE_HOST_HASH") != "" && os.Getenv("PJSEKAI_DOMAIN") != "" && os.Getenv("PJSEKAI_PROFILE") != "" {
-		return m {
+		return m{
 			"assetbundleHostHash": os.Getenv("PJSEKAI_ASSET_BUNDLE_HOST_HASH"),
-			"domain": os.Getenv("PJSEKAI_DOMAIN"),
-			"profile": os.Getenv("PJSEKAI_PROFILE"),
+			"domain":              os.Getenv("PJSEKAI_DOMAIN"),
+			"profile":             os.Getenv("PJSEKAI_PROFILE"),
 		}
 	}
 	return clients.SekaiClient.Request("GET", fmt.Sprintf("https://game-version.sekai.colorfulpalette.org/%v/%v", clients.SekaiClient.AppVersion["appVersion"], clients.SekaiClient.AppVersion["appHash"]), nil)
